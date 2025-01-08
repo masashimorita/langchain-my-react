@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.13
 
 RUN apt-get -y update
 
@@ -10,7 +10,7 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY .venv ./
+# COPY .venv ./
 
 # COPY pyproject.toml poetry.lock ./
 
