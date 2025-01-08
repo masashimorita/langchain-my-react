@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    command: python3 app.py
+    tty: true
+    volumes:
+      - .:/app
+    ports:
+      - 5001:5000
+    env_file:
+      - .env
