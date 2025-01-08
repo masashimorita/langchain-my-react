@@ -10,11 +10,11 @@ WORKDIR /app
 
 RUN pip install poetry
 
-# COPY .venv ./
+COPY .venv ./
 
-# COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock ./
 
-# RUN poetry install --no-root
+RUN poetry install --no-root
 
 COPY . .
 
