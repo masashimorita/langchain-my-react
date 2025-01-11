@@ -1,1 +1,8 @@
-print('You are running app.py')
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
+if __name__ == '__main__':
+    print('HELLO ReAct Langchain!')
