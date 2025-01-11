@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from typing import Union, List
+from typing import Union, List, Tuple
 from langchain.agents import tool
 from langchain.agents.output_parsers.react_single_input import (
     ReActSingleInputOutputParser,
@@ -31,6 +31,20 @@ def find_tool_by_name(tools: List[Tool], tool_name: str) -> Tool:
     raise ValueError(f"Tool with name {tool_name} not found")
 
 
+def format_log_to_str(
+    intermediate_steps: List[Tuple[AgentAction, str]],
+    observation_prefix: str = "Observation: ",
+    llm_prefix: str = "Thought: ",
+) -> str:
+    """Construct the scratchpad that lets the agent continue its thought process."""
+    throughts = ""
+    for action, observation in intermediate_steps:
+        throughts += action.log
+        throughts += f"\n{observation_prefix}{observation}\n{llm_prefix}"
+
+    return throughts
+
+
 if __name__ == "__main__":
     print("HELLO ReAct Langchain!")
 
@@ -55,7 +69,7 @@ if __name__ == "__main__":
     Begin!
 
     Question: {input}
-    Thought:
+    Thought: {agent_scratchpad}
     """
 
     prompt = PromptTemplate.from_template(template=template).partial(
@@ -64,12 +78,23 @@ if __name__ == "__main__":
     )
 
     llm = ChatOpenAI(temperature=0, stop=["\nObservation", "Observation"])
+    intermediate_steps = []
+
     agent = (
-        {"input": lambda x: x["input"]} | prompt | llm | ReActSingleInputOutputParser()
+        {
+            "input": lambda x: x["input"],
+            "agent_scratchpad": lambda x: format_log_to_str(x["agent_scratchpad"]),
+        }
+        | prompt
+        | llm
+        | ReActSingleInputOutputParser()
     )
 
     agent_step: Union[AgentAction, AgentFinish] = agent.invoke(
-        {"input": "What is the length in characters of the text Dog ?"}
+        {
+            "input": "What is the length in characters of the text Dog?",
+            "agent_scratchpad": intermediate_steps,
+        }
     )
     print(agent_step)
 
@@ -80,3 +105,14 @@ if __name__ == "__main__":
 
         observation = tool_to_use.func(str(tool_input))
         print(f"{observation=}")
+
+        intermediate_steps.append((agent_step, str(observation)))
+
+    agent_step: Union[AgentAction, AgentFinish] = agent.invoke(
+        {
+            "input": "What is the length in characters of the text Dog?",
+            "agent_scratchpad": intermediate_steps,
+        }
+    )
+    if isinstance(agent_step, AgentFinish):
+        print(agent_step.return_values)
